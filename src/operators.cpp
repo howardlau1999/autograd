@@ -5,7 +5,9 @@ namespace autograd {
 
 variable_list AccumulateGrad::apply(variable_list &&grads) {
   auto grad = grads[0].value_;
-  variable_.lock()->grad_ += grad;
+  if (auto ptr = variable_.lock()) {
+    ptr->grad_ += grad;
+  }
   return variable_list();
 }
 

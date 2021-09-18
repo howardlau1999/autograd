@@ -104,29 +104,58 @@ TEST(VariableBackward, StopGradient) {
   ASSERT_FLOAT_EQ(y->grad_, 0.0);
 }
 
+template<class ...Variables>
+void zero_grad() {
+  return;
+}
+
+template<class T, class ...Variables>
+void zero_grad(T variable, Variables... variables) {
+  variable->grad_ = 0.0;
+  zero_grad(variables...);
+}
+
+class SGD {
+public:
+  float learning_rate_ = 0.003;
+
+  template<class ...Variables>
+  void step() {
+    return;
+  }
+
+  template<class T, class ...Variables>
+  void step(T variable, Variables... variables) {
+    variable->value_ -= learning_rate_ * variable->grad_;
+    step(variables...);
+  }
+};
+
 TEST(Integration, LinearRegression) {
   auto w = variable(0.128911248);
   auto b = variable(-0.423790183);
-  float learning_rate = 0.003;
+
   // y = x + 1
+  SGD sgd;
   for (int i = 0; i <= 5000; ++i) {
-    w->grad_ = 0.0;
-    b->grad_ = 0.0;
-    float loss = 0.0;
+    zero_grad(w, b);
+    auto z = variable(0.0);
     for (float xv = 0.0; xv < 32.0; xv += 1.0) {
       auto x = variable(xv);
       auto y = variable(xv + 1.0f);
       x->set_requires_grad(false);
       y->set_requires_grad(false);
-      auto z = (w * x + b - y) * (w * x + b - y);
-      loss += z->value_;
-      autograd::run_backward(*z);
+      z = z + (w * x + b - y) * (w * x + b - y); 
     }
-    w->value_ -= w->grad_ / 32.0f * learning_rate;
-    b->value_ -= b->grad_ / 32.0f * learning_rate;
+    auto batch_size = variable(32.0);
+    z = z / batch_size;
+   
+    autograd::run_backward(*z);
+    sgd.step(w, b);
+
     if (i % 1000 == 0) {
       BOOST_LOG_TRIVIAL(debug)
-          << "Iter = " << i << ", Loss = " << (loss / 32.0f);
+          << "Iter = " << i << ", Loss = " << (z->value_);
     }
   }
   BOOST_LOG_TRIVIAL(debug) << "w = " << w->value_ << ", b = " << b->value_;

@@ -11,7 +11,7 @@ cc_library(
         "src/variable.cpp",
         "src/operators.cpp",    
     ],
-    deps = ["@com_gitlab_libeigen_eigen//:eigen", "@boost//:log"]
+    deps = ["@com_gitlab_libeigen_eigen//:eigen", "@boost//:log"],
 )
 
 cc_test(
