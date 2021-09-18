@@ -46,7 +46,6 @@ variable_list PowBackward::apply(variable_list &&grads) {
   return grads_input;
 }
 
-
 variable_list LogBackward::apply(variable_list &&grads) {
   auto grad = grads[0].value_;
   auto value = self_->value_;
@@ -54,5 +53,12 @@ variable_list LogBackward::apply(variable_list &&grads) {
   return grads_input;
 }
 
+variable_list ReLUBackward::apply(variable_list &&grads) {
+  auto grad = grads[0].value_;
+  auto value = self_->value_;
+  float grad_value = value >= 0 ? grad : 0.0f;
+  variable_list grads_input{grad_value};
+  return grads_input;
+}
 
 } // namespace autograd

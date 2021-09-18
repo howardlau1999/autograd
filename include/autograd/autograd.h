@@ -21,6 +21,7 @@ class Node : public std::enable_shared_from_this<Node> {
 public:
   Node() = default;
   virtual ~Node() = default;
+  virtual const char *name() { return typeid(*this).name(); }
   void add_next_edge(Edge &&edge) { next_edges_.push_back(edge); }
   int next_edges() { return next_edges_.size(); }
   int input_nr() { return input_nr_; }
@@ -30,6 +31,7 @@ public:
 };
 
 void run_backward(Variable &root);
+void print_graph(Variable &root);
 
 } // namespace autograd
 

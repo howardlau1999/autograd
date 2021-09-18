@@ -1,6 +1,7 @@
 #include <autograd/autograd.h>
 #include <autograd/variable.h>
 #include <cmath>
+#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 using autograd::Variable;
@@ -104,12 +105,21 @@ TEST(VariableBackward, StopGradient) {
   ASSERT_FLOAT_EQ(y->grad_, 0.0);
 }
 
-template<class ...Variables>
-void zero_grad() {
-  return;
+TEST(VariableForward, sigmoid) {
+  auto x = variable(0.0f);
+  auto y = x->sigmoid();
+  ASSERT_FLOAT_EQ(y->value_, 0.5f);
 }
 
-template<class T, class ...Variables>
+TEST(VariableForward, log) {
+  auto x = variable(1.0f);
+  auto y = x->log();
+  ASSERT_FLOAT_EQ(y->value_, 0.0f);
+}
+
+template <class... Variables> void zero_grad() { return; }
+
+template <class T, class... Variables>
 void zero_grad(T variable, Variables... variables) {
   variable->grad_ = 0.0;
   zero_grad(variables...);
@@ -119,17 +129,19 @@ class SGD {
 public:
   float learning_rate_ = 0.003;
 
-  template<class ...Variables>
-  void step() {
-    return;
-  }
+  template <class... Variables> void step() { return; }
 
-  template<class T, class ...Variables>
+  template <class T, class... Variables>
   void step(T variable, Variables... variables) {
     variable->value_ -= learning_rate_ * variable->grad_;
     step(variables...);
   }
 };
+
+std::shared_ptr<Variable> mse_loss(std::shared_ptr<Variable> predicted,
+                                   std::shared_ptr<Variable> target) {
+  return (predicted - target) * (predicted - target);
+}
 
 TEST(Integration, LinearRegression) {
   auto w = variable(0.128911248);
@@ -145,20 +157,110 @@ TEST(Integration, LinearRegression) {
       auto y = variable(xv + 1.0f);
       x->set_requires_grad(false);
       y->set_requires_grad(false);
-      z = z + (w * x + b - y) * (w * x + b - y); 
+      auto predicted = w * x + b;
+      z = z + mse_loss(predicted, y);
     }
     auto batch_size = variable(32.0);
     z = z / batch_size;
-   
+
     autograd::run_backward(*z);
     sgd.step(w, b);
 
     if (i % 1000 == 0) {
       BOOST_LOG_TRIVIAL(debug)
-          << "Iter = " << i << ", Loss = " << (z->value_);
+          << fmt::format("Iter = {}, Loss = {}", i, z->value_);
     }
   }
-  BOOST_LOG_TRIVIAL(debug) << "w = " << w->value_ << ", b = " << b->value_;
+  BOOST_LOG_TRIVIAL(debug) << fmt::format("w = {}, b = {}", w->value_,
+                                          b->value_);
   ASSERT_NEAR(w->value_, 1.0, 1e-3);
   ASSERT_NEAR(b->value_, 1.0, 1e-3);
+}
+
+struct XORNet {
+  void _zero_grad() {
+    for (int i = 0; i < 9; ++i) {
+      if (i < 4) {
+        zero_grad(layer2[i]);
+      }
+      zero_grad(layer1[i]);
+    }
+  }
+  std::shared_ptr<Variable> forward(std::shared_ptr<Variable> x1,
+                                    std::shared_ptr<Variable> x2) {
+    std::shared_ptr<Variable> layer1_output[3] = {
+        (layer1[0] * x1 + layer1[1] * x2 + layer1[2])->sigmoid(),
+        (layer1[3] * x1 + layer1[4] * x2 + layer1[5])->sigmoid(),
+        (layer1[6] * x1 + layer1[7] * x2 + layer1[8])->sigmoid(),
+    };
+
+    std::shared_ptr<Variable> layer2_output =
+        (layer2[0] * layer1_output[0] + layer2[1] * layer1_output[1] +
+         layer2[2] * layer1_output[2] + layer2[3]);
+
+    return layer2_output;
+  }
+  std::shared_ptr<Variable> layer1[2 * 3 + 3] = {
+      variable(0.71423874), variable(-0.2349723), variable(0.32478342),
+      variable(-0.234782),  variable(0.21328192), variable(-0.2389934),
+      variable(0.234782),  variable(0.51328292), variable(0.81328192)};
+  std::shared_ptr<Variable> layer2[3 * 1 + 1] = {
+      variable(0.41328192), variable(-0.2389934), variable(-0.5349832),
+      variable(-0.2349832)};
+};
+
+std::shared_ptr<Variable> bce_loss(std::shared_ptr<Variable> predicted,
+                                   std::shared_ptr<Variable> target) {
+  auto one = variable(1.0f)->detach();
+  return (target * predicted->log()) +
+         ((one - target) * (one - predicted->log()));
+}
+
+TEST(Integration, XORNet) {
+  std::shared_ptr<Variable> x[4 * 2] = {
+      variable(0.0f), variable(0.0f), variable(1.0f), variable(0.0f),
+      variable(0.0f), variable(1.0f), variable(1.0f), variable(1.0f),
+  };
+  std::shared_ptr<Variable> y[4] = {
+      variable(0.0f),
+      variable(1.0f),
+      variable(1.0f),
+      variable(0.0f),
+  };
+  auto one = variable(1.0f);
+
+  SGD sgd;
+  XORNet model;
+  sgd.learning_rate_ = 0.1;
+  for (int i = 0; i < 10000; ++i) {
+    model._zero_grad();
+    auto loss = variable(0.0f);
+    for (int b = 0; b < 4; ++b) {
+      auto output = model.forward(x[b * 2], x[b * 2 + 1]);
+      loss = loss + mse_loss(output, y[b]);
+    }
+    auto batch_size = variable(4.0f);
+
+    loss = loss / batch_size;
+    autograd::run_backward(*loss);
+
+    for (int i = 0; i < 9; ++i) {
+      if (i < 4) {
+        sgd.step(model.layer2[i]);
+      }
+      sgd.step(model.layer1[i]);
+    }
+
+    if (i % 1000 == 0) {
+      BOOST_LOG_TRIVIAL(debug)
+          << fmt::format("Iter = {}, Loss = {}", i, loss->value_);
+    }
+  }
+  for (int b = 0; b < 4; ++b) {
+    auto output = model.forward(x[b * 2], x[b * 2 + 1]);
+    ASSERT_NEAR(output->value_, y[b]->value_, 1e-3);
+    BOOST_LOG_TRIVIAL(debug)
+        << fmt::format("xor({}, {}) = {}", x[b * 2]->value_,
+                       x[b * 2 + 1]->value_, output->value_);
+  }
 }

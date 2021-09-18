@@ -20,6 +20,7 @@ cc_test(
     deps = [
         ":autograd", 
         "@com_gitlab_libeigen_eigen//:eigen", 
-        "@com_google_googletest//:gtest_main"
+        "@com_google_googletest//:gtest_main",
+        "@com_github_fmtlib_fmt//:fmt",
     ],
 )

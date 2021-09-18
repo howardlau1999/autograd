@@ -6,6 +6,10 @@
 
 namespace autograd {
 
+void Variable::set_gradient_edge(Edge &&gradient_edge) {
+  gradient_edge_ = gradient_edge;
+}
+
 Edge Variable::gradient_edge() {
   if (!gradient_edge_.grad_fn() && requires_grad_) {
     std::shared_ptr<AccumulateGrad> grad_fn =
@@ -84,7 +88,6 @@ std::shared_ptr<Variable> operator^(std::shared_ptr<Variable> lhs,
   return result;
 }
 
-
 std::shared_ptr<Variable> Variable::log() {
   std::shared_ptr<LogBackward> grad_fn = std::make_shared<LogBackward>();
   grad_fn->self_ = shared_from_this();
@@ -95,5 +98,21 @@ std::shared_ptr<Variable> Variable::log() {
   return result;
 }
 
+std::shared_ptr<Variable> Variable::relu() {
+  std::shared_ptr<ReLUBackward> grad_fn = std::make_shared<ReLUBackward>();
+  grad_fn->self_ = shared_from_this();
+  grad_fn->add_input_nr();
+  auto result = std::make_shared<Variable>(std::max(value_, 0.0f));
+  result->set_gradient_edge({grad_fn, 0});
+  grad_fn->add_next_edge(gradient_edge());
+  return result;
+}
+
+std::shared_ptr<Variable> Variable::sigmoid() {
+  auto one = std::make_shared<Variable>(1.0);
+  auto e = std::make_shared<Variable>(std::exp(1.0));
+  auto negx = std::make_shared<Variable>(0.0) - shared_from_this();
+  return one / (one + (e ^ negx));
+}
 
 } // namespace autograd
