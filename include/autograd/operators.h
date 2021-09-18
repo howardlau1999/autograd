@@ -42,6 +42,12 @@ public:
   std::shared_ptr<Variable> self_;
 };
 
+class LogBackward : public Node {
+public:
+  variable_list apply(variable_list &&grads) override;
+  std::shared_ptr<Variable> self_;
+};
+
 } // namespace autograd
 
 #endif // __OPERATORS_H__

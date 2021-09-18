@@ -60,6 +60,14 @@ TEST(VariableBackward, Pow) {
   ASSERT_FLOAT_EQ(x->grad_, std::exp(3.0));
 }
 
+TEST(VariableBackward, Log) {
+  auto x = variable(1.0);
+  auto z = x->log();
+  ASSERT_FLOAT_EQ(z->value_, 0);
+  autograd::run_backward(*z);
+  ASSERT_FLOAT_EQ(x->grad_, 1.0);
+}
+
 TEST(VariableBackward, Order2) {
   auto x = variable(5.0);
   auto y = variable(3.0);

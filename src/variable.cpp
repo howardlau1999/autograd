@@ -84,4 +84,16 @@ std::shared_ptr<Variable> operator^(std::shared_ptr<Variable> lhs,
   return result;
 }
 
+
+std::shared_ptr<Variable> Variable::log() {
+  std::shared_ptr<LogBackward> grad_fn = std::make_shared<LogBackward>();
+  grad_fn->self_ = shared_from_this();
+  grad_fn->add_input_nr();
+  auto result = std::make_shared<Variable>(std::log(value_));
+  result->set_gradient_edge({grad_fn, 0});
+  grad_fn->add_next_edge(gradient_edge());
+  return result;
+}
+
+
 } // namespace autograd

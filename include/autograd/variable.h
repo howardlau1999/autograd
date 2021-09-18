@@ -55,6 +55,7 @@ public:
   void set_requires_grad(bool requires_grad) { requires_grad_ = requires_grad; }
 
   std::shared_ptr<Variable> detach();
+  std::shared_ptr<Variable> log(); 
 };
 
 std::shared_ptr<Variable> operator+(std::shared_ptr<Variable> lhs,
