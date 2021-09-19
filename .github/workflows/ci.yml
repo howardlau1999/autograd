@@ -1,0 +1,16 @@
+name: Test Autograd
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    # virtual environments: https://github.com/actions/virtual-environments
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, which is the CWD for
+      # the rest of the steps
+      - uses: actions/checkout@v2
+
+      - name: Test
+        run: bazel test --test_output=errors autograd_test
