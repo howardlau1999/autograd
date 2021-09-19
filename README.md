@@ -1,3 +1,9 @@
+## 编译运行
+
+```bash
+bazel run autograd_test
+```
+
 ## 数据结构
 
 `sutrct Edge`: 计算图的边，保存了指向的终点 `grad_fn_` 以及在起点的出边中的顺序 `input_nr_`。

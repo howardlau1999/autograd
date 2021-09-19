@@ -13,7 +13,7 @@ cc_library(
         "src/operators.cpp",    
         "src/optimizer.cpp",
     ],
-    deps = ["@com_gitlab_libeigen_eigen//:eigen", "@boost//:log"],
+    deps = ["@boost//:log"],
     copts = ["-std=c++17"],
 )
 
@@ -21,8 +21,7 @@ cc_test(
     name = "autograd_test",
     srcs = ["tests/autograd_test.cpp"],
     deps = [
-        ":autograd", 
-        "@com_gitlab_libeigen_eigen//:eigen", 
+        ":autograd",
         "@com_google_googletest//:gtest_main",
         "@com_github_fmtlib_fmt//:fmt",
     ],
