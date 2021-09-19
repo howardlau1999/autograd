@@ -1,6 +1,6 @@
 #include <autograd/autograd.h>
-#include <autograd/variable.h>
 #include <autograd/optimizer.h>
+#include <autograd/variable.h>
 #include <cmath>
 #include <fmt/format.h>
 #include <gtest/gtest.h>
@@ -123,9 +123,6 @@ TEST(VariableForward, log) {
   ASSERT_FLOAT_EQ(y->value_, 0.0f);
 }
 
-
-
-
 std::shared_ptr<Variable> mse_loss(std::shared_ptr<Variable> predicted,
                                    std::shared_ptr<Variable> target) {
   return (predicted - target) * (predicted - target);
@@ -184,7 +181,8 @@ struct XORNet {
 
     std::shared_ptr<Variable> layer2_output =
         (layer2[0] * layer1_output[0] + layer2[1] * layer1_output[1] +
-         layer2[2] * layer1_output[2] + layer2[3])->sigmoid();
+         layer2[2] * layer1_output[2] + layer2[3])
+            ->sigmoid();
 
     return layer2_output;
   }
@@ -201,9 +199,8 @@ std::shared_ptr<Variable> bce_loss(std::shared_ptr<Variable> predicted,
                                    std::shared_ptr<Variable> target) {
   auto one = variable(1.0f)->detach();
   auto eps = variable(1e-7f)->detach();
-  auto predicted_eps = predicted + eps;
-  return -(target * predicted_eps->log()) -
-         ((one - target) * (one - predicted_eps->log()));
+  return -(target * (predicted + eps)->log()) -
+         ((one - target) * (one - predicted + eps)->log());
 }
 
 TEST(Integration, XORNet_BCELoss) {
