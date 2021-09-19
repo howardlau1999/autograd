@@ -164,12 +164,8 @@ TEST(Integration, Order1LinearRegression) {
 
 struct XORNet {
   void _zero_grad() {
-    for (int i = 0; i < 9; ++i) {
-      if (i < 4) {
-        zero_grad(layer2[i]);
-      }
-      zero_grad(layer1[i]);
-    }
+    zero_grad(layer1);
+    zero_grad(layer2);
   }
   std::shared_ptr<Variable> forward(std::shared_ptr<Variable> x1,
                                     std::shared_ptr<Variable> x2) {
@@ -219,7 +215,7 @@ TEST(Integration, XORNet_BCELoss) {
   SGD sgd;
   XORNet model;
   sgd.learning_rate_ = 0.5;
-  for (int i = 0; i < 10000; ++i) {
+  for (int i = 0; i < 5000; ++i) {
     model._zero_grad();
     auto loss = variable(0.0f);
     for (int b = 0; b < 4; ++b) {
@@ -231,18 +227,15 @@ TEST(Integration, XORNet_BCELoss) {
     loss = loss / batch_size;
     autograd::run_backward(*loss);
 
-    for (int i = 0; i < 9; ++i) {
-      if (i < 4) {
-        sgd.step(model.layer2[i]);
-      }
-      sgd.step(model.layer1[i]);
-    }
+    sgd.step(model.layer1);
+    sgd.step(model.layer2);
 
     if (i % 1000 == 0) {
       BOOST_LOG_TRIVIAL(debug)
           << fmt::format("Iter = {}, Loss = {}", i, loss->value_);
     }
   }
+  
   for (int b = 0; b < 4; ++b) {
     auto output = model.forward(x[b * 2], x[b * 2 + 1]);
     ASSERT_NEAR(output->value_, y[b]->value_, 1e-2);

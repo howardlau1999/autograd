@@ -1,6 +1,8 @@
 #include <autograd/autograd.h>
+#include <boost/algorithm/string/join.hpp>
 #include <boost/log/trivial.hpp>
 #include <cxxabi.h>
+#include <fmt/format.h>
 #include <iostream>
 #include <queue>
 #include <sstream>
@@ -17,9 +19,22 @@ struct NodeTask {
 void print_graph(Variable &root) {
   std::unordered_map<std::shared_ptr<Node>, bool> visited;
   std::queue<std::shared_ptr<Node>> queue;
-  std::unordered_map<std::shared_ptr<Node>, std::string> nodes;
-  std::unordered_map<std::shared_ptr<Node>, std::vector<std::shared_ptr<Node>>>
+  std::unordered_map<std::shared_ptr<Node>, std::string> node_names;
+  std::unordered_map<std::shared_ptr<Node>, std::vector<std::string>>
       neighbours;
+
+  auto get_node_name = [&](std::shared_ptr<Node> n) {
+    auto it = node_names.find(n);
+    if (it != node_names.end()) {
+      return it->second;
+    }
+    char *buf =
+        __cxxabiv1::__cxa_demangle(n->name(), nullptr, nullptr, nullptr);
+    std::string&& name = fmt::format("{}_{}", buf + 10, fmt::ptr(n));
+    free(buf);
+    return node_names[n] = std::move(name);
+  };
+
   queue.push(root.gradient_edge().grad_fn());
   while (!queue.empty()) {
     auto node = queue.front();
@@ -27,17 +42,14 @@ void print_graph(Variable &root) {
     if (!node) {
       continue;
     }
-    std::stringstream ss;
-    char *buf =
-        __cxxabiv1::__cxa_demangle(node->name(), nullptr, nullptr, nullptr);
-    ss << (buf + 10) << "_" << node;
-    free(buf);
-    nodes[node] = ss.str();
+
+    (void)get_node_name(node);
+
     for (int i = 0; i < node->next_edges(); ++i) {
       auto edge = node->next_edge(i);
       auto grad_fn = edge.grad_fn();
       if (grad_fn) {
-        neighbours[node].push_back(grad_fn);
+        neighbours[node].push_back(get_node_name(grad_fn));
         if (!visited[grad_fn]) {
           visited[grad_fn] = true;
           queue.push(grad_fn);
@@ -46,22 +58,15 @@ void print_graph(Variable &root) {
     }
   }
   std::cout << "digraph {" << std::endl << std::endl;
-  for (auto &[p, s] : nodes) {
+  for (auto &[p, s] : node_names) {
     std::cout << "  " << s << std::endl;
   }
   std::cout << std::endl;
   for (auto &[p, ns] : neighbours) {
-    std::cout << "  " << nodes[p] << " -> {";
-    bool is_first = true;
-    for (auto &n : ns) {
-      if (!is_first)
-        std::cout << " ";
-      std::cout << nodes[n];
-      is_first = false;
-    }
-    std::cout << "}" << std::endl;
+    fmt::print("  {} -> {{{}}}\n", get_node_name(p),
+               boost::algorithm::join(ns, " "));
   }
-  std::cout << "}" << std::endl;
+  std::cout << std::endl << "}" << std::endl;
 }
 
 void compute_dependencies(

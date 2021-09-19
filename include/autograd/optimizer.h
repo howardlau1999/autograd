@@ -5,8 +5,15 @@ template <class... Variables> void zero_grad() { return; }
 
 template <class T, class... Variables>
 void zero_grad(T variable, Variables... variables) {
-  variable->grad_ = 0.0;
+  variable->grad_ = 0.0f;
   zero_grad(variables...);
+}
+
+template <class T, size_t N>
+void zero_grad(T (&variables)[N]) {
+    for (int i = 0; i < N; ++i) {
+        variables[i]->grad_ = 0.0f;
+    }
 }
 
 class SGD {
@@ -19,6 +26,13 @@ public:
   void step(T variable, Variables... variables) {
     variable->value_ -= learning_rate_ * variable->grad_;
     step(variables...);
+  }
+
+  template <class T, size_t N>
+  void step(T (&variables)[N]) {
+      for (int i = 0; i < N; ++i) {
+          variables[i]->value_ -= learning_rate_ * variables[i]->grad_;
+      }
   }
 };
 
