@@ -61,4 +61,10 @@ variable_list ReLUBackward::apply(variable_list &&grads) {
   return grads_input;
 }
 
+variable_list NegBackward::apply(variable_list &&grads) {
+  auto grad = grads[0].value_;
+  variable_list grads_input{-grad};
+  return grads_input;
+}
+
 } // namespace autograd

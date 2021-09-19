@@ -1,8 +1,8 @@
 #if !defined(__TENSOR_H__)
 #define __TENSOR_H__
 
-#include <memory>
 #include <boost/log/trivial.hpp>
+#include <memory>
 
 namespace autograd {
 
@@ -35,7 +35,7 @@ public:
   T grad_ = T();
   Edge gradient_edge_;
 
-  void set_gradient_edge(Edge &&gradient_edge); 
+  void set_gradient_edge(Edge &&gradient_edge);
 
   Edge gradient_edge();
 
@@ -56,11 +56,14 @@ public:
   std::shared_ptr<Variable> detach();
   std::shared_ptr<Variable> log();
   std::shared_ptr<Variable> relu();
-  std::shared_ptr<Variable> sigmoid(); 
+  std::shared_ptr<Variable> sigmoid();
 };
+
+std::shared_ptr<Variable> variable(float v);
 
 std::shared_ptr<Variable> operator+(std::shared_ptr<Variable> lhs,
                                     std::shared_ptr<Variable> rhs);
+std::shared_ptr<Variable> operator-(std::shared_ptr<Variable> var);
 std::shared_ptr<Variable> operator-(std::shared_ptr<Variable> lhs,
                                     std::shared_ptr<Variable> rhs);
 std::shared_ptr<Variable> operator*(std::shared_ptr<Variable> lhs,
@@ -69,7 +72,6 @@ std::shared_ptr<Variable> operator/(std::shared_ptr<Variable> lhs,
                                     std::shared_ptr<Variable> rhs);
 std::shared_ptr<Variable> operator^(std::shared_ptr<Variable> lhs,
                                     std::shared_ptr<Variable> rhs);
-
 
 } // namespace autograd
 

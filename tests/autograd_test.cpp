@@ -1,14 +1,12 @@
 #include <autograd/autograd.h>
 #include <autograd/variable.h>
+#include <autograd/optimizer.h>
 #include <cmath>
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
 using autograd::Variable;
-
-std::shared_ptr<Variable> variable(float v) {
-  return std::make_shared<Variable>(v);
-}
+using autograd::variable;
 
 TEST(VariableBackward, Add) {
   auto x = variable(5.0);
@@ -59,6 +57,14 @@ TEST(VariableBackward, Pow) {
   ASSERT_FLOAT_EQ(z->value_, std::exp(3.0));
   autograd::run_backward(*z);
   ASSERT_FLOAT_EQ(x->grad_, std::exp(3.0));
+}
+
+TEST(VariableBackward, Neg) {
+  auto x = variable(5.0);
+  auto negx = -x;
+  ASSERT_FLOAT_EQ(negx->value_, -5.0);
+  autograd::run_backward(*negx);
+  ASSERT_FLOAT_EQ(x->grad_, -1.0);
 }
 
 TEST(VariableBackward, Log) {
@@ -117,33 +123,15 @@ TEST(VariableForward, log) {
   ASSERT_FLOAT_EQ(y->value_, 0.0f);
 }
 
-template <class... Variables> void zero_grad() { return; }
 
-template <class T, class... Variables>
-void zero_grad(T variable, Variables... variables) {
-  variable->grad_ = 0.0;
-  zero_grad(variables...);
-}
 
-class SGD {
-public:
-  float learning_rate_ = 0.003;
-
-  template <class... Variables> void step() { return; }
-
-  template <class T, class... Variables>
-  void step(T variable, Variables... variables) {
-    variable->value_ -= learning_rate_ * variable->grad_;
-    step(variables...);
-  }
-};
 
 std::shared_ptr<Variable> mse_loss(std::shared_ptr<Variable> predicted,
                                    std::shared_ptr<Variable> target) {
   return (predicted - target) * (predicted - target);
 }
 
-TEST(Integration, LinearRegression) {
+TEST(Integration, Order1LinearRegression) {
   auto w = variable(0.128911248);
   auto b = variable(-0.423790183);
 
@@ -196,14 +184,14 @@ struct XORNet {
 
     std::shared_ptr<Variable> layer2_output =
         (layer2[0] * layer1_output[0] + layer2[1] * layer1_output[1] +
-         layer2[2] * layer1_output[2] + layer2[3]);
+         layer2[2] * layer1_output[2] + layer2[3])->sigmoid();
 
     return layer2_output;
   }
   std::shared_ptr<Variable> layer1[2 * 3 + 3] = {
       variable(0.71423874), variable(-0.2349723), variable(0.32478342),
       variable(-0.234782),  variable(0.21328192), variable(-0.2389934),
-      variable(0.234782),  variable(0.51328292), variable(0.81328192)};
+      variable(0.234782),   variable(0.51328292), variable(0.81328192)};
   std::shared_ptr<Variable> layer2[3 * 1 + 1] = {
       variable(0.41328192), variable(-0.2389934), variable(-0.5349832),
       variable(-0.2349832)};
@@ -212,11 +200,13 @@ struct XORNet {
 std::shared_ptr<Variable> bce_loss(std::shared_ptr<Variable> predicted,
                                    std::shared_ptr<Variable> target) {
   auto one = variable(1.0f)->detach();
-  return (target * predicted->log()) +
-         ((one - target) * (one - predicted->log()));
+  auto eps = variable(1e-7f)->detach();
+  auto predicted_eps = predicted + eps;
+  return -(target * predicted_eps->log()) -
+         ((one - target) * (one - predicted_eps->log()));
 }
 
-TEST(Integration, XORNet) {
+TEST(Integration, XORNet_BCELoss) {
   std::shared_ptr<Variable> x[4 * 2] = {
       variable(0.0f), variable(0.0f), variable(1.0f), variable(0.0f),
       variable(0.0f), variable(1.0f), variable(1.0f), variable(1.0f),
@@ -231,13 +221,13 @@ TEST(Integration, XORNet) {
 
   SGD sgd;
   XORNet model;
-  sgd.learning_rate_ = 0.1;
+  sgd.learning_rate_ = 0.5;
   for (int i = 0; i < 10000; ++i) {
     model._zero_grad();
     auto loss = variable(0.0f);
     for (int b = 0; b < 4; ++b) {
       auto output = model.forward(x[b * 2], x[b * 2 + 1]);
-      loss = loss + mse_loss(output, y[b]);
+      loss = loss + bce_loss(output, y[b]);
     }
     auto batch_size = variable(4.0f);
 
@@ -258,7 +248,7 @@ TEST(Integration, XORNet) {
   }
   for (int b = 0; b < 4; ++b) {
     auto output = model.forward(x[b * 2], x[b * 2 + 1]);
-    ASSERT_NEAR(output->value_, y[b]->value_, 1e-3);
+    ASSERT_NEAR(output->value_, y[b]->value_, 1e-2);
     BOOST_LOG_TRIVIAL(debug)
         << fmt::format("xor({}, {}) = {}", x[b * 2]->value_,
                        x[b * 2 + 1]->value_, output->value_);

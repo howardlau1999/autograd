@@ -54,6 +54,11 @@ public:
   std::shared_ptr<Variable> self_;
 };
 
+class NegBackward : public Node {
+public:
+  variable_list apply(variable_list &&grads) override;
+};
+
 } // namespace autograd
 
 #endif // __OPERATORS_H__

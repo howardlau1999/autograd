@@ -33,7 +33,7 @@ void print_graph(Variable &root) {
     ss << (buf + 10) << "_" << node;
     free(buf);
     nodes[node] = ss.str();
-    for (unsigned int i = 0; i < node->next_edges(); ++i) {
+    for (int i = 0; i < node->next_edges(); ++i) {
       auto edge = node->next_edge(i);
       auto grad_fn = edge.grad_fn();
       if (grad_fn) {
@@ -77,7 +77,7 @@ void compute_dependencies(
       continue;
     }
 
-    for (unsigned int i = 0; i < node->next_edges(); ++i) {
+    for (int i = 0; i < node->next_edges(); ++i) {
       auto edge = node->next_edge(i);
       auto grad_fn = edge.grad_fn();
       if (grad_fn) {
@@ -102,7 +102,7 @@ void run_backward(Variable &root) {
     auto task = queue.front();
     queue.pop();
     auto outputs = task.fn->apply(std::move(task.variables));
-    for (int i = 0; i < outputs.size(); ++i) {
+    for (unsigned int i = 0; i < outputs.size(); ++i) {
       auto edge = task.fn->next_edge(i);
       auto fn = edge.grad_fn();
       if (!fn)

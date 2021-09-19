@@ -6,6 +6,10 @@
 
 namespace autograd {
 
+std::shared_ptr<Variable> variable(float v) {
+  return std::make_shared<Variable>(v);
+}
+
 void Variable::set_gradient_edge(Edge &&gradient_edge) {
   gradient_edge_ = gradient_edge;
 }
@@ -111,8 +115,16 @@ std::shared_ptr<Variable> Variable::relu() {
 std::shared_ptr<Variable> Variable::sigmoid() {
   auto one = std::make_shared<Variable>(1.0);
   auto e = std::make_shared<Variable>(std::exp(1.0));
-  auto negx = std::make_shared<Variable>(0.0) - shared_from_this();
-  return one / (one + (e ^ negx));
+  return one / (one + (e ^ (-shared_from_this())));
+}
+
+std::shared_ptr<Variable> operator-(std::shared_ptr<Variable> var) {
+  std::shared_ptr<NegBackward> grad_fn = std::make_shared<NegBackward>();
+  grad_fn->add_input_nr();
+  auto result = std::make_shared<Variable>(-var->value_);
+  result->set_gradient_edge({grad_fn, 0});
+  grad_fn->add_next_edge(var->gradient_edge());
+  return result;
 }
 
 } // namespace autograd
