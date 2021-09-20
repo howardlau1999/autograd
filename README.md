@@ -10,6 +10,8 @@ bazel run autograd_test
 
 包含了一个使用 MSE 损失函数的一次直线的线性回归，以及一个使用 BCE 损失函数的带有 sigmoid 激活函数的两层非线性 XOR 网络。
 
+使用 `pybind11` 封装了一个 Python 库 `autograd_py`。
+
 ## API
 
 `autograd::run_backward(Variable& root)`: 以 root 为根节点，以拓扑排序进行一次反向传播。

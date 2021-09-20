@@ -1,3 +1,5 @@
+load("@pybind11_bazel//:build_defs.bzl", "pybind_extension", "pybind_library")
+
 cc_library(
     name = "autograd",
     srcs = [
@@ -30,4 +32,28 @@ cc_test(
         "@com_github_fmtlib_fmt//:fmt",
         "@com_google_googletest//:gtest_main",
     ],
+)
+
+pybind_extension(
+    name = "autograd_py",
+    srcs = [
+        "python/autograd.cpp",
+    ],
+    copts = ["-std=c++17"],
+    deps = [
+        ":autograd",
+    ],
+)
+
+py_library(
+    name = "autograd_py",
+    data = [":autograd_py.so"],
+    imports = ["."],
+)
+
+py_test(
+    name = "autograd_py_test",
+    srcs = ["python/autograd_test.py"],
+    main = "python/autograd_test.py",
+    deps = [":autograd_py"],
 )
