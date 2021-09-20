@@ -40,3 +40,4 @@ bazel run autograd_test
 2. 反向传播过程中，如果一条边不需要梯度，就直接返回空的变量。
 3. 反向传播过程中，会先使用一个线程进行递归遍历，递归深度过大的时候会启动多个线程。
 4. 反向传播的起点支持 Jacobian 矩阵输入（比较少用到）。
+5. Autograd 的正向算子和反向算子包装代码是用[代码生成脚本](https://github.com/pytorch/pytorch/tree/master/tools/autograd)生成的。
