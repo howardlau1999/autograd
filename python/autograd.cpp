@@ -41,8 +41,14 @@ PYBIND11_MODULE(autograd_py, m) {
       .def("relu", &autograd::Variable::relu)
       .def("sigmoid", &autograd::Variable::sigmoid)
       .def("zero_grad", &autograd::Variable::zero_grad)
-      .def("grad", &autograd::Variable::grad)
-      .def("value", &autograd::Variable::value)
+      .def("grad",
+           [](std::shared_ptr<autograd::Variable> var) {
+             return var->grad().front();
+           })
+      .def("value",
+           [](std::shared_ptr<autograd::Variable> var) {
+             return var->value().front();
+           })
       .def("__repr__", &autograd::Variable::to_string);
 
   m.def("variable", &autograd::variable, R"pbdoc(
