@@ -20,6 +20,7 @@ cc_library(
         "@boost//:algorithm",
         "@boost//:log",
         "@com_github_fmtlib_fmt//:fmt",
+        "@com_github_xtensor_stack_xtensor//:xtensor",
     ],
 )
 
@@ -31,6 +32,7 @@ cc_test(
         ":autograd",
         "@com_github_fmtlib_fmt//:fmt",
         "@com_google_googletest//:gtest_main",
+        "@com_github_xtensor_stack_xtensor//:xtensor",
     ],
 )
 

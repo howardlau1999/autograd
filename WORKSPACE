@@ -50,3 +50,44 @@ http_archive(
 )
 load("@pybind11_bazel//:python_configure.bzl", "python_configure")
 python_configure(name = "local_config_python")
+
+http_archive(
+    name = "com_github_xtensor_stack_xtl",
+    strip_prefix = "xtl-7d775ef072c5030ec17c5306bc840f3ff046d8b5",
+    urls = [
+        "https://github.com/xtensor-stack/xtl/archive/7d775ef072c5030ec17c5306bc840f3ff046d8b5.zip",
+    ],
+    build_file_content =
+"""
+cc_library(
+    name = 'xtl',
+    srcs = glob(['include/**']),
+    includes = ['include'],
+    hdrs = glob([
+        'include/**',
+    ]),
+    visibility = ['//visibility:public'],
+)
+"""
+)
+
+http_archive(
+    name = "com_github_xtensor_stack_xtensor",
+    strip_prefix = "xtensor-fe81957365ce7eb56ea417bea95476c1344d7c31",
+    urls = [
+        "https://github.com/xtensor-stack/xtensor/archive/fe81957365ce7eb56ea417bea95476c1344d7c31.zip",
+    ],
+    build_file_content =
+"""
+cc_library(
+    name = 'xtensor',
+    srcs = glob(['include/**']),
+    includes = ['include'],
+    hdrs = glob([
+        'include/**',
+    ]),
+    deps = ['@com_github_xtensor_stack_xtl//:xtl'],
+    visibility = ['//visibility:public'],
+)
+"""
+)
