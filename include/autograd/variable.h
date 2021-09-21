@@ -4,6 +4,7 @@
 #include <boost/log/trivial.hpp>
 #include <fmt/format.h>
 #include <memory>
+#include <xtensor/xarray.hpp>
 
 namespace autograd {
 
@@ -26,7 +27,7 @@ public:
 };
 
 class Variable : public std::enable_shared_from_this<Variable> {
-  using T = float;
+  using T = xt::xarray<float>;
 
   // Autograd Metadata
   bool requires_grad_ = true;
@@ -46,6 +47,8 @@ public:
 
   Variable() = default;
 
+  Variable(float value) : value_(value) {};
+
   Variable(T value) : value_(value) {}
 
   Variable operator=(T value) { value_ = value; }
@@ -62,7 +65,7 @@ public:
 
   std::string to_string() const {
     return fmt::format("Variable @ {} value = {} grad = {}", fmt::ptr(this),
-                       value_, grad_);
+                       value_.front(), grad_.front());
   }
 
   std::shared_ptr<Variable> detach();

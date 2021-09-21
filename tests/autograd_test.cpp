@@ -12,30 +12,30 @@ TEST(VariableBackward, Add) {
   auto x = variable(5.0);
   auto y = variable(4.0);
   auto z = x + y;
-  ASSERT_FLOAT_EQ(z->value_, 9.0);
+  ASSERT_FLOAT_EQ(z->value_.front(), 9.0);
   autograd::run_backward(*z);
-  ASSERT_FLOAT_EQ(x->grad_, 1.0);
-  ASSERT_FLOAT_EQ(y->grad_, 1.0);
+  ASSERT_FLOAT_EQ(x->grad_.front(), 1.0);
+  ASSERT_FLOAT_EQ(y->grad_.front(), 1.0);
 }
 
 TEST(VariableBackward, Sub) {
   auto x = variable(5.0);
   auto y = variable(4.0);
   auto z = x - y;
-  ASSERT_FLOAT_EQ(z->value_, 1.0);
+  ASSERT_FLOAT_EQ(z->value_.front(), 1.0);
   autograd::run_backward(*z);
-  ASSERT_FLOAT_EQ(x->grad_, 1.0);
-  ASSERT_FLOAT_EQ(y->grad_, -1.0);
+  ASSERT_FLOAT_EQ(x->grad_.front(), 1.0);
+  ASSERT_FLOAT_EQ(y->grad_.front(), -1.0);
 }
 
 TEST(VariableBackward, Mul) {
   auto x = variable(5.0);
   auto y = variable(4.0);
   auto z = x * y;
-  ASSERT_FLOAT_EQ(z->value_, 20.0);
+  ASSERT_FLOAT_EQ(z->value_.front(), 20.0);
   autograd::run_backward(*z);
-  ASSERT_FLOAT_EQ(x->grad_, 4.0);
-  ASSERT_FLOAT_EQ(y->grad_, 5.0);
+  ASSERT_FLOAT_EQ(x->grad_.front(), 4.0);
+  ASSERT_FLOAT_EQ(y->grad_.front(), 5.0);
 }
 
 TEST(VariableBackward, MulAdd) {
@@ -43,46 +43,46 @@ TEST(VariableBackward, MulAdd) {
   auto y = variable(3.0);
   auto u = variable(4.0);
   auto z = u * (x + y);
-  ASSERT_FLOAT_EQ(z->value_, 32.0);
+  ASSERT_FLOAT_EQ(z->value_.front(), 32.0);
   autograd::run_backward(*z);
-  ASSERT_FLOAT_EQ(u->grad_, 8.0);
-  ASSERT_FLOAT_EQ(y->grad_, 4.0);
-  ASSERT_FLOAT_EQ(x->grad_, 4.0);
+  ASSERT_FLOAT_EQ(u->grad_.front(), 8.0);
+  ASSERT_FLOAT_EQ(y->grad_.front(), 4.0);
+  ASSERT_FLOAT_EQ(x->grad_.front(), 4.0);
 }
 
 TEST(VariableBackward, Pow) {
   auto e = variable(std::exp(1));
   auto x = variable(3.0);
   auto z = e ^ x;
-  ASSERT_FLOAT_EQ(z->value_, std::exp(3.0));
+  ASSERT_FLOAT_EQ(z->value_.front(), std::exp(3.0));
   autograd::run_backward(*z);
-  ASSERT_FLOAT_EQ(x->grad_, std::exp(3.0));
+  ASSERT_FLOAT_EQ(x->grad_.front(), std::exp(3.0));
 }
 
 TEST(VariableBackward, Neg) {
   auto x = variable(5.0);
   auto negx = -x;
-  ASSERT_FLOAT_EQ(negx->value_, -5.0);
+  ASSERT_FLOAT_EQ(negx->value_.front(), -5.0);
   autograd::run_backward(*negx);
-  ASSERT_FLOAT_EQ(x->grad_, -1.0);
+  ASSERT_FLOAT_EQ(x->grad_.front(), -1.0);
 }
 
 TEST(VariableBackward, Log) {
   auto x = variable(1.0);
   auto z = x->log();
-  ASSERT_FLOAT_EQ(z->value_, 0);
+  ASSERT_FLOAT_EQ(z->value_.front(), 0);
   autograd::run_backward(*z);
-  ASSERT_FLOAT_EQ(x->grad_, 1.0);
+  ASSERT_FLOAT_EQ(x->grad_.front(), 1.0);
 }
 
 TEST(VariableBackward, Order2) {
   auto x = variable(5.0);
   auto y = variable(3.0);
   auto z = y * x * x + x * y * y;
-  ASSERT_FLOAT_EQ(z->value_, 120.0);
+  ASSERT_FLOAT_EQ(z->value_.front(), 120.0);
   autograd::run_backward(*z);
-  ASSERT_FLOAT_EQ(y->grad_, 25.0 + 30.0); // dz/dy = x * x + 2 * x * y
-  ASSERT_FLOAT_EQ(x->grad_, 30.0 + 9.0);  // dz/dx = 2 * y * x + y * y;
+  ASSERT_FLOAT_EQ(y->grad_.front(), 25.0 + 30.0); // dz/dy = x * x + 2 * x * y
+  ASSERT_FLOAT_EQ(x->grad_.front(), 30.0 + 9.0);  // dz/dx = 2 * y * x + y * y;
 }
 
 TEST(VariableBackward, NoGrad) {
@@ -90,10 +90,10 @@ TEST(VariableBackward, NoGrad) {
   auto y = variable(3.0);
   x->set_requires_grad(false);
   auto z = y * x * x + x * y * y;
-  ASSERT_FLOAT_EQ(z->value_, 120.0);
+  ASSERT_FLOAT_EQ(z->value_.front(), 120.0);
   autograd::run_backward(*z);
-  ASSERT_FLOAT_EQ(y->grad_, 25.0 + 30.0); // dz/dy = x * x + 2 * x * y
-  ASSERT_FLOAT_EQ(x->grad_, 0.0);         // dz/dx = 0;
+  ASSERT_FLOAT_EQ(y->grad_.front(), 25.0 + 30.0); // dz/dy = x * x + 2 * x * y
+  ASSERT_FLOAT_EQ(x->grad_.front(), 0.0);         // dz/dx = 0;
 }
 
 TEST(VariableBackward, StopGradient) {
@@ -104,23 +104,23 @@ TEST(VariableBackward, StopGradient) {
   auto v = variable(20.0);
   auto stop_grad = (x + y)->detach();
   auto z = u * v + w * stop_grad;
-  ASSERT_FLOAT_EQ(z->value_, 227.0);
+  ASSERT_FLOAT_EQ(z->value_.front(), 227.0);
   autograd::run_backward(*z);
-  ASSERT_FLOAT_EQ(w->grad_, 9.0);
-  ASSERT_FLOAT_EQ(x->grad_, 0.0);
-  ASSERT_FLOAT_EQ(y->grad_, 0.0);
+  ASSERT_FLOAT_EQ(w->grad_.front(), 9.0);
+  ASSERT_FLOAT_EQ(x->grad_.front(), 0.0);
+  ASSERT_FLOAT_EQ(y->grad_.front(), 0.0);
 }
 
 TEST(VariableForward, sigmoid) {
   auto x = variable(0.0f);
   auto y = x->sigmoid();
-  ASSERT_FLOAT_EQ(y->value_, 0.5f);
+  ASSERT_FLOAT_EQ(y->value_.front(), 0.5f);
 }
 
 TEST(VariableForward, log) {
   auto x = variable(1.0f);
   auto y = x->log();
-  ASSERT_FLOAT_EQ(y->value_, 0.0f);
+  ASSERT_FLOAT_EQ(y->value_.front(), 0.0f);
 }
 
 std::shared_ptr<Variable> mse_loss(std::shared_ptr<Variable> predicted,
@@ -153,13 +153,13 @@ TEST(Integration, Order1LinearRegression) {
 
     if (i % 1000 == 0) {
       BOOST_LOG_TRIVIAL(debug)
-          << fmt::format("Iter = {}, Loss = {}", i, z->value_);
+          << fmt::format("Iter = {}, Loss = {}", i, z->value_.front());
     }
   }
-  BOOST_LOG_TRIVIAL(debug) << fmt::format("w = {}, b = {}", w->value_,
-                                          b->value_);
-  ASSERT_NEAR(w->value_, 1.0, 1e-3);
-  ASSERT_NEAR(b->value_, 1.0, 1e-3);
+  BOOST_LOG_TRIVIAL(debug) << fmt::format("w = {}, b = {}", w->value_.front(),
+                                          b->value_.front());
+  ASSERT_NEAR(w->value_.front(), 1.0, 1e-3);
+  ASSERT_NEAR(b->value_.front(), 1.0, 1e-3);
 }
 
 struct XORNet {
@@ -232,15 +232,15 @@ TEST(Integration, XORNet_BCELoss) {
 
     if (i % 1000 == 0) {
       BOOST_LOG_TRIVIAL(debug)
-          << fmt::format("Iter = {}, Loss = {}", i, loss->value_);
+          << fmt::format("Iter = {}, Loss = {}", i, loss->value_.front());
     }
   }
   
   for (int b = 0; b < 4; ++b) {
     auto output = model.forward(x[b * 2], x[b * 2 + 1]);
-    ASSERT_NEAR(output->value_, y[b]->value_, 1e-2);
+    ASSERT_NEAR(output->value_.front(), y[b]->value_.front(), 1e-2);
     BOOST_LOG_TRIVIAL(debug)
-        << fmt::format("xor({}, {}) = {}", x[b * 2]->value_,
-                       x[b * 2 + 1]->value_, output->value_);
+        << fmt::format("xor({}, {}) = {}", x[b * 2]->value_.front(),
+                       x[b * 2 + 1]->value_.front(), output->value_.front());
   }
 }
