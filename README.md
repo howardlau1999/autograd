@@ -1,5 +1,7 @@
 简单地演示了 PyTorch 中自动求导机制的原理。
 
+官方博客：[https://pytorch.org/blog/overview-of-pytorch-autograd-engine/](https://pytorch.org/blog/overview-of-pytorch-autograd-engine/)
+
 ## 编译运行
 
 使用 [Bazel](https://docs.bazel.build/versions/4.2.1/install.html)
